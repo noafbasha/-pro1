@@ -1,5 +1,4 @@
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 
 // تأمين الوصول لمتغيرات البيئة
 const getEnv = (key: string, fallback: string) => {
