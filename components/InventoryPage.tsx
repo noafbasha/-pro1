@@ -1,7 +1,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useAgency } from '../context/AgencyContext';
-import { ExpenseCategory, Currency } from '../types';
+import { ExpenseCategory, Currency, Sale, Purchase } from '../types'; // Import Sale and Purchase types
 import { useNotify } from '../context/NotificationContext';
 // Add import for ConfirmModal
 import ConfirmModal from './ConfirmModal';
@@ -17,19 +17,19 @@ const InventoryPage: React.FC = React.memo(() => {
   const [deleteQatModal, setDeleteQatModal] = useState<string | null>(null);
 
   const inventoryDetails = useMemo(() => {
-    return qatTypes.map(type => {
-      const regularIn = purchases.filter(p => p.qatType === type && !p.isReturn).reduce((s, p) => s + p.quantity, 0);
-      const returnIn = sales.filter(s => s.qatType === type && s.isReturn).reduce((s, s1) => s + s1.quantity, 0);
+    return qatTypes.map((type: string) => {
+      const regularIn = purchases.filter((p: Purchase) => p.qatType === type && !p.isReturn).reduce((s, p) => s + p.quantity, 0);
+      const returnIn = sales.filter((s: Sale) => s.qatType === type && s.isReturn).reduce((s, s1) => s + s1.quantity, 0);
       const totalIn = regularIn + returnIn;
-      const regularOut = sales.filter(s => s.qatType === type && !s.isReturn).reduce((s, s1) => s + s1.quantity, 0);
-      const returnOut = purchases.filter(p => p.qatType === type && p.isReturn).reduce((s, p) => s + p.quantity, 0);
+      const regularOut = sales.filter((s: Sale) => s.qatType === type && !s.isReturn).reduce((s, s1) => s + s1.quantity, 0);
+      const returnOut = purchases.filter((p: Purchase) => p.qatType === type && p.isReturn).reduce((s, p) => s + p.quantity, 0);
       const totalOut = regularOut + returnOut;
       const current = totalIn - totalOut;
       const velocity = totalIn > 0 ? (regularOut / totalIn) : 0;
       
       const movements = [
-        ...purchases.filter(p => p.qatType === type).map(p => ({ date: p.date, desc: p.isReturn ? 'مرتجع مورد' : `توريد من ${p.supplierName}`, qty: p.quantity, type: p.isReturn ? 'OUT' : 'IN' })),
-        ...sales.filter(s => s.qatType === type).map(s => ({ date: s.date, desc: s.isReturn ? 'مرتجع عميل' : `بيع لـ ${s.customerName}`, qty: s.quantity, type: s.isReturn ? 'IN' : 'OUT' }))
+        ...purchases.filter((p: Purchase) => p.qatType === type).map(p => ({ date: p.date, desc: p.isReturn ? 'مرتجع مورد' : `توريد من ${p.supplierName}`, qty: p.quantity, type: p.isReturn ? 'OUT' : 'IN' })),
+        ...sales.filter((s: Sale) => s.qatType === type).map(s => ({ date: s.date, desc: s.isReturn ? 'مرتجع عميل' : `بيع لـ ${s.customerName}`, qty: s.quantity, type: s.isReturn ? 'IN' : 'OUT' }))
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
       return { type, totalIn, totalOut, current, velocity, movements };
@@ -135,7 +135,7 @@ const InventoryPage: React.FC = React.memo(() => {
                  <button onClick={() => setSelectedTypeForLog(null)} className="text-3xl" aria-label="إغلاق">✕</button>
               </div>
               <div className="max-h-[60vh] overflow-y-auto p-4 space-y-2">
-                 {inventoryDetails.find(i => i.type === selectedTypeForLog)?.movements.map((m, idx) => (
+                 {inventoryDetails.find(i => i.type === selectedTypeForLog)?.movements.map((m: any, idx: number) => (
                     <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border dark:border-slate-700">
                        <div className={`font-black text-lg ${m.type === 'IN' ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {m.type === 'IN' ? '+' : '-'}{m.qty}

@@ -1,7 +1,8 @@
 
+
 import React, { useMemo, useState, useRef } from 'react';
 import { useAgency } from '../context/AgencyContext';
-import { Currency, VoucherType } from '../types';
+import { Currency, VoucherType, Sale, Purchase, Voucher, Customer, Supplier, StatementTransaction, DetailedStatementRow } from '../types'; // Import necessary types
 import { formatDetailedStatement, sendToWhatsApp } from '../services/messagingService';
 import { tafqit } from '../services/numberUtils';
 import { useNotify } from '../context/NotificationContext';
@@ -23,8 +24,8 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
 
   const entity = useMemo(() => {
     return entityType === 'customer' 
-      ? customers.find(c => c.id === entityId)
-      : suppliers.find(s => s.id === entityId);
+      ? customers.find((c: Customer) => c.id === entityId)
+      : suppliers.find((s: Supplier) => s.id === entityId);
   }, [entityId, entityType, customers, suppliers]);
 
   const getRateAtDate = (date: string, currency: string) => {
@@ -38,7 +39,7 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
   };
 
   const transactions = useMemo(() => {
-    let list: any[] = [];
+    let list: StatementTransaction[] = [];
     if (entity && entity.openingBalance) {
       list.push({
         date: entity.openingBalanceDate || new Date(0).toISOString(),
@@ -51,18 +52,18 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
     }
 
     if (entityType === 'customer') {
-      const customerSales = sales.filter(s => s.customerId === entityId);
-      const customerVouchers = vouchers.filter(v => v.entityId === entityId && v.entityType === 'customer');
+      const customerSales = sales.filter((s: Sale) => s.customerId === entityId);
+      const customerVouchers = vouchers.filter((v: Voucher) => v.entityId === entityId && v.entityType === 'customer');
       list = [...list, 
-        ...customerSales.map(s => ({ date: s.date, desc: `${s.isReturn ? 'مرتجع: ' : ''}${s.qatType} (${s.quantity})`, debit: s.isReturn ? 0 : s.total, credit: s.isReturn ? s.total : 0, currency: s.currency, ref: 'فاتورة' })),
-        ...customerVouchers.map(v => ({ date: v.date, desc: v.notes || (v.type === VoucherType.Receipt ? 'دفعة نقدية' : 'صرف نقدي'), debit: v.type === VoucherType.Payment ? v.amount : 0, credit: v.type === VoucherType.Receipt ? v.amount : 0, currency: v.currency, ref: v.type }))
+        ...customerSales.map((s: Sale) => ({ date: s.date, desc: `${s.isReturn ? 'مرتجع: ' : ''}${s.qatType} (${s.quantity})`, debit: s.isReturn ? 0 : s.total, credit: s.isReturn ? s.total : 0, currency: s.currency, ref: 'فاتورة' })),
+        ...customerVouchers.map((v: Voucher) => ({ date: v.date, desc: v.notes || (v.type === VoucherType.Receipt ? 'دفعة نقدية' : 'صرف نقدي'), debit: v.type === VoucherType.Payment ? v.amount : 0, credit: v.type === VoucherType.Receipt ? v.amount : 0, currency: v.currency, ref: v.type }))
       ];
     } else {
-      const supplierPurchases = purchases.filter(p => p.supplierId === entityId);
-      const supplierVouchers = vouchers.filter(v => v.entityId === entityId && v.entityType === 'supplier');
+      const supplierPurchases = purchases.filter((p: Purchase) => p.supplierId === entityId);
+      const supplierVouchers = vouchers.filter((v: Voucher) => v.entityId === entityId && v.entityType === 'supplier');
       list = [...list,
-        ...supplierPurchases.map(p => ({ date: p.date, desc: `${p.isReturn ? 'مرتجع: ' : ''}${p.qatType} (${p.quantity})`, debit: p.isReturn ? p.totalCost : 0, credit: p.isReturn ? 0 : p.totalCost, currency: p.currency, ref: 'توريد' })),
-        ...supplierVouchers.map(v => ({ date: v.date, desc: v.notes || (v.type === VoucherType.Payment ? 'تسديد دفعة' : 'استلام مبلغ'), debit: v.type === VoucherType.Payment ? v.amount : 0, credit: v.type === VoucherType.Receipt ? v.amount : 0, currency: v.currency, ref: v.type }))
+        ...supplierPurchases.map((p: Purchase) => ({ date: p.date, desc: `${p.isReturn ? 'مرتجع: ' : ''}${p.qatType} (${p.quantity})`, debit: p.isReturn ? p.totalCost : 0, credit: p.isReturn ? 0 : p.totalCost, currency: p.currency, ref: 'توريد' })),
+        ...supplierVouchers.map((v: Voucher) => ({ date: v.date, desc: v.notes || (v.type === VoucherType.Payment ? 'تسديد دفعة' : 'استلام مبلغ'), debit: v.type === VoucherType.Payment ? v.amount : 0, credit: v.type === VoucherType.Receipt ? v.amount : 0, currency: v.currency, ref: v.type }))
       ];
     }
     return list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -70,7 +71,7 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
 
   const statementRows = useMemo(() => {
     let runningBalanceYer = 0;
-    return transactions.map(t => {
+    return transactions.map((t: StatementTransaction) => { // Explicitly type 't' as 'StatementTransaction'
       const rateUsed = getRateAtDate(t.date, t.currency);
       const debitYer = t.debit * rateUsed;
       const creditYer = t.credit * rateUsed;
@@ -92,7 +93,7 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
     notify('جاري تجهيز كشف الحساب للإرسال... 📄', 'info');
 
     const element = pdfRef.current;
-    const cleanFilename = `Statement_${entity?.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+    const cleanFilename = `Statement_${entity?.name?.replace(/\s+/g, '_') || 'unknown'}_${Date.now()}.pdf`;
     
     // خيارات متقدمة لضمان التقاط الألوان بشكل صحيح وتجاوز الوضع الليلي
     const opt = {
@@ -114,7 +115,7 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
             
             // تنظيف أي عناصر مظللة أو مغبشة
             const allElements = content.querySelectorAll('*');
-            allElements.forEach((el: any) => {
+            allElements.forEach((el: HTMLElement) => { // Explicitly type 'el' as HTMLElement
               el.style.filter = 'none';
               el.style.backdropFilter = 'none';
               el.style.color = 'inherit'; // استعادة لون النص الافتراضي
@@ -129,14 +130,14 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
             });
             
             // فرض ألوان خاصة للمبالغ المالية لتكون واضحة
-            content.querySelectorAll('.text-rose-600').forEach((el: any) => el.style.color = '#dc2626');
-            content.querySelectorAll('.text-emerald-600').forEach((el: any) => el.style.color = '#059669');
+            content.querySelectorAll('.text-rose-600').forEach((el: HTMLElement) => el.style.color = '#dc2626');
+            content.querySelectorAll('.text-emerald-600').forEach((el: HTMLElement) => el.style.color = '#059669');
             // تغيير لون text-slate-400 إلى الأزرق
-            content.querySelectorAll('.text-slate-400').forEach((el: any) => el.style.color = '#0000FF'); 
+            content.querySelectorAll('.text-slate-400').forEach((el: HTMLElement) => el.style.color = '#0000FF'); 
             // تغيير لون dark:text-white إلى الأسود
-            content.querySelectorAll('.dark:text-white').forEach((el: any) => el.style.color = '#000000'); 
-            content.querySelectorAll('.dark:bg-slate-900').forEach((el: any) => el.style.backgroundColor = '#ffffff'); // الخلفيات الداكنة تصبح بيضاء
-            content.querySelectorAll('.dark:border-slate-800').forEach((el: any) => el.style.borderColor = '#e2e8f0'); // حدود داكنة تصبح فاتحة
+            content.querySelectorAll('.dark:text-white').forEach((el: HTMLElement) => el.style.color = '#000000'); 
+            content.querySelectorAll('.dark:bg-slate-900').forEach((el: HTMLElement) => el.style.backgroundColor = '#ffffff'); // الخلفيات الداكنة تصبح بيضاء
+            content.querySelectorAll('.dark:border-slate-800').forEach((el: HTMLElement) => el.style.borderColor = '#e2e8f0'); // حدود داكنة تصبح فاتحة
           }
         }
       },
@@ -256,7 +257,7 @@ const EntityStatementModal: React.FC<Props> = ({ entityId, entityType, onClose }
                 </tr>
               </thead>
               <tbody>
-                {statementRows.map((row, idx) => (
+                {statementRows.map((row: DetailedStatementRow, idx: number) => (
                   <tr key={idx} className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                     <td className="p-4 font-bold text-slate-500 text-[10px] md:text-sm">{new Date(row.date).toLocaleDateString('ar-YE')}</td>
                     <td className="p-4 text-right">

@@ -81,7 +81,7 @@ const DeveloperPage: React.FC = React.memo(() => {
   );
 });
 
-const ContactCard = ({ icon, title, value, href, 'aria-labelledby': ariaLabelledby }: any) => (
+const ContactCard = ({ icon, title, value, href, 'aria-labelledby': ariaLabelledby }: {icon: string, title: string, value: string, href: string, 'aria-labelledby'?: string}) => (
   <a 
     href={href} 
     className="block p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl border-2 border-transparent hover:border-emerald-500 transition-all group"

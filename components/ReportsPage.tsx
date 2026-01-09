@@ -98,9 +98,9 @@ const ReportsPage: React.FC = React.memo(() => {
   };
 
   const reportStats = useMemo(() => {
-    const fSales = sales.filter(s => s.date >= dateRange.start && s.date <= dateRange.end + 'T23:59:59');
-    const fPurchases = purchases.filter(p => p.date >= dateRange.start && p.date <= dateRange.end + 'T23:59:59');
-    const fExpenses = expenses.filter(e => e.date >= dateRange.start && e.date <= dateRange.end + 'T23:59:59');
+    const fSales = sales.filter((s) => s.date >= dateRange.start && s.date <= dateRange.end + 'T23:59:59');
+    const fPurchases = purchases.filter((p) => p.date >= dateRange.start && p.date <= dateRange.end + 'T23:59:59');
+    const fExpenses = expenses.filter((e) => e.date >= dateRange.start && e.date <= dateRange.end + 'T23:59:59');
     
     const grossSales = fSales.reduce((sum, s) => sum + (convertToYer(s.total, s.currency) * (s.isReturn ? -1 : 1)), 0);
     const costOfGoods = fPurchases.reduce((sum, p) => sum + (convertToYer(p.totalCost, p.currency) * (p.isReturn ? -1 : 1)), 0);
@@ -109,7 +109,7 @@ const ReportsPage: React.FC = React.memo(() => {
     const cashSales = fSales.filter(s => s.status === 'نقدي').reduce((sum, s) => sum + convertToYer(s.total, s.currency), 0);
     const collectionRate = grossSales > 0 ? (cashSales / grossSales) * 100 : 0;
 
-    const qatPerformance = qatTypes.reduce((acc, type) => {
+    const qatPerformance = qatTypes.reduce((acc: Record<string, QatPerformanceData>, type: string) => {
         const fItemsSales = fSales.filter(s => s.qatType === type);
         const qty = fItemsSales.reduce((sum, s) => sum + s.quantity, 0);
         const revenue = fItemsSales.reduce((sum, s) => sum + (convertToYer(s.total, s.currency) * (s.isReturn ? -1 : 1)), 0);
@@ -123,14 +123,14 @@ const ReportsPage: React.FC = React.memo(() => {
       const d = new Date();
       d.setDate(d.getDate() - (14 - i));
       const ds = d.toISOString().split('T')[0];
-      return sales.filter(s => s.date.startsWith(ds)).reduce((sum, s) => sum + (convertToYer(s.total, s.currency) * (s.isReturn ? -1 : 1)), 0);
+      return sales.filter((s) => s.date.startsWith(ds)).reduce((sum, s) => sum + (convertToYer(s.total, s.currency) * (s.isReturn ? -1 : 1)), 0);
     });
 
     return { 
       grossSales, costOfGoods, totalExpenses,
       netProfit: grossSales - costOfGoods - totalExpenses, 
       collectionRate, qatPerformance, dailyTrend,
-      totalCustomerDebt: debts.reduce((s, d) => s + (d.balances.YER + d.balances.SAR * rates.SAR + d.balances.OMR * rates.OMR), 0)
+      totalCustomerDebt: debts.reduce((s, d) => s + (d.balances.YER + (d.balances.SAR || 0) * rates.SAR + (d.balances.OMR || 0) * rates.OMR), 0)
     };
   }, [sales, purchases, expenses, dateRange, rates, qatTypes, debts]);
 
@@ -328,7 +328,7 @@ const ReportsPage: React.FC = React.memo(() => {
   );
 });
 
-const ReportTabButton = ({ active, onClick, label, icon, id }: any) => (
+const ReportTabButton = ({ active, onClick, label, icon, id }: {active: boolean, onClick: () => void, label: string, icon: string, id: string}) => (
   <button onClick={onClick} className={`flex-1 flex items-center justify-center gap-2 md:gap-3 px-4 py-3 md:py-5 rounded-xl md:rounded-[2rem] font-black text-[10px] md:text-lg transition-all whitespace-nowrap ${active ? 'bg-indigo-600 text-white shadow-xl' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
     role="tab"
     aria-selected={active}
@@ -339,7 +339,7 @@ const ReportTabButton = ({ active, onClick, label, icon, id }: any) => (
   </button>
 );
 
-const ReportCard = ({ title, value, color, bg, trend, icon, isPrivacy }: any) => (
+const ReportCard = ({ title, value, color, bg, trend, icon, isPrivacy }: {title: string, value: number, color: string, bg: string, trend: string, icon: string, isPrivacy: boolean}) => (
   <div className={`${bg} p-5 md:p-10 rounded-2xl md:rounded-[3rem] border border-transparent hover:border-slate-200 dark:hover:border-slate-700 shadow-sm transition-all text-right`}>
     <div className="flex justify-between items-start mb-4">
       <span className="text-xl md:text-4xl opacity-20" aria-hidden="true">{icon}</span>

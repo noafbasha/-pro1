@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAgency } from '../context/AgencyContext';
 import { useStats } from '../hooks/useStats';
 import { askBusinessAssistant } from '../services/geminiService';
+import { Customer, Supplier } from '../types'; // Import Customer and Supplier types
 
 const SalesChart = ({ data }: { data: number[] }) => {
   const max = Math.max(...data, 1000);
@@ -66,9 +67,9 @@ const GlobalSearch: React.FC = () => {
     const q = query.toLowerCase();
     return {
       pages: appPages.filter(p => p.name.includes(q)),
-      customers: customers.filter(c => c.name.includes(q)).slice(0, 5),
-      suppliers: suppliers.filter(s => s.name.includes(q)).slice(0, 5),
-      items: qatTypes.filter(t => t.includes(q))
+      customers: customers.filter((c: Customer) => c.name.toLowerCase().includes(q)).slice(0, 5),
+      suppliers: suppliers.filter((s: Supplier) => s.name.toLowerCase().includes(q)).slice(0, 5),
+      items: qatTypes.filter((t: string) => t.toLowerCase().includes(q))
     };
   }, [query, customers, suppliers, qatTypes]);
 
@@ -133,7 +134,7 @@ const GlobalSearch: React.FC = () => {
               <div className="space-y-1" role="group" aria-labelledby="search-items-heading">
                 <h4 id="search-items-heading" className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">الأصناف</h4>
                 <div className="flex flex-wrap gap-2 p-2">
-                  {results.items.map(t => (
+                  {results.items.map((t: string) => (
                     <button key={t} onClick={() => handleSelect('/inventory')} className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-black" role="option">🌿 {t}</button>
                   ))}
                 </div>

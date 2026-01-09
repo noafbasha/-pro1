@@ -1,7 +1,8 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { useAgency } from '../context/AgencyContext';
-import { Currency, VoucherType } from '../types';
+import { Currency, VoucherType, Sale, Purchase, Voucher, Expense, JournalEntryDisplay } from '../types'; // Import types
 import ConfirmModal from './ConfirmModal';
 
 const JournalPage: React.FC = React.memo(() => {
@@ -17,9 +18,9 @@ const JournalPage: React.FC = React.memo(() => {
   };
 
   const allEntries = useMemo(() => {
-    const entries: any[] = [
-      ...sales.map(s => ({ 
-        ...s, 
+    const entries: JournalEntryDisplay[] = [
+      ...sales.map((s: Sale) => ({ 
+        id: s.id,
         origin: 'sale', 
         type: 'بيع', 
         status: s.isReturn ? 'عليه' : 'له',
@@ -27,10 +28,12 @@ const JournalPage: React.FC = React.memo(() => {
         yerAmount: getYerAmount(s.total, s.currency), 
         desc: `${s.customerName} - صنف: ${s.qatType}`, 
         timestamp: s.date, 
-        receipt: s.receiptUrl 
+        receipt: s.receiptUrl,
+        currency: s.currency,
+        amount: s.total,
       })),
-      ...purchases.map(p => ({ 
-        ...p, 
+      ...purchases.map((p: Purchase) => ({ 
+        id: p.id,
         origin: 'purchase', 
         type: 'شراء', 
         status: p.isReturn ? 'له' : 'عليه',
@@ -38,10 +41,12 @@ const JournalPage: React.FC = React.memo(() => {
         yerAmount: getYerAmount(p.totalCost, p.currency), 
         desc: `${p.supplierName} - صنف: ${p.qatType}`, 
         timestamp: p.date, 
-        receipt: p.receiptUrl 
+        receipt: p.receiptUrl,
+        currency: p.currency,
+        amount: p.totalCost,
       })),
-      ...vouchers.map(v => ({ 
-        ...v, 
+      ...vouchers.map((v: Voucher) => ({ 
+        id: v.id,
         origin: 'voucher', 
         type: v.type, 
         status: v.type === VoucherType.Receipt ? 'له' : 'عليه',
@@ -49,10 +54,12 @@ const JournalPage: React.FC = React.memo(() => {
         yerAmount: getYerAmount(v.amount, v.currency), 
         desc: v.notes || `${v.entityName} (${v.entityType === 'customer' ? 'عميل' : 'مورد'})`, 
         timestamp: v.date, 
-        receipt: v.receiptUrl 
+        receipt: v.receiptUrl,
+        currency: v.currency,
+        amount: v.amount,
       })),
-      ...expenses.map(e => ({ 
-        ...e, 
+      ...expenses.map((e: Expense) => ({ 
+        id: e.id,
         origin: 'expense', 
         type: 'مصروف', 
         status: 'عليه',
@@ -60,14 +67,16 @@ const JournalPage: React.FC = React.memo(() => {
         yerAmount: getYerAmount(e.amount, e.currency), 
         desc: e.description, 
         timestamp: e.date, 
-        receipt: e.receiptUrl 
+        receipt: e.receiptUrl,
+        currency: e.currency,
+        amount: e.amount,
       }))
     ];
     return entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [sales, purchases, vouchers, expenses, rates]);
 
   const filteredEntries = useMemo(() => {
-    return allEntries.filter(entry => {
+    return allEntries.filter((entry: JournalEntryDisplay) => { // Explicitly type 'entry' as 'JournalEntryDisplay'
       const matchesSearch = entry.desc.toLowerCase().includes(searchTerm.toLowerCase()) || 
                             entry.type.includes(searchTerm);
       const matchesType = filterType === 'all' || entry.type === filterType;
@@ -111,137 +120,120 @@ const JournalPage: React.FC = React.memo(() => {
              <h2 className="text-3xl md:text-6xl font-black mb-2">اليومية العامة</h2>
              <p className="text-sm md:text-xl opacity-70 font-bold">سجل العمليات المترابط والمدقق مالياً</p>
           </div>
-          <button onClick={() => window.print()} className="w-full md:w-auto bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-2xl font-black text-base shadow-xl transition-all border border-white/20" aria-label="طباعة السجل">
-             🖨️ طباعة السجل
-          </button>
+          <button onClick={() => window.print()} className="w-full md:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 md:py-6 rounded-2xl md:rounded-3xl font-black text-lg md:text-2xl shadow-xl transition-all flex items-center justify-center gap-2" aria-label="طباعة اليومية">🖨️ طباعة اليومية</button>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white dark:bg-slate-900 p-4 rounded-[1.5rem] shadow-sm border border-slate-200 dark:border-slate-800">
-        <div className="md:col-span-2 relative group">
+      <div className="flex flex-col md:flex-row gap-3 bg-white dark:bg-slate-900 p-4 md:p-6 rounded-[1.5rem] md:rounded-[3rem] shadow-lg border border-slate-100 dark:border-slate-800">
+        <div className="relative flex-grow group">
           <input 
             type="text" 
-            placeholder="بحث في البيان أو الطرف..." 
-            className="w-full p-4 pr-12 bg-slate-50 dark:bg-slate-800 rounded-xl outline-none border-2 border-transparent focus:border-emerald-500 font-bold dark:text-white transition-all shadow-inner text-right text-base"
+            placeholder="بحث بالوصف أو النوع..." 
+            className="w-full p-4 pr-12 bg-slate-50 dark:bg-slate-800 rounded-xl md:rounded-[2rem] outline-none font-bold dark:text-white border-2 border-transparent focus:border-emerald-500 transition-all text-right text-base"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            aria-label="البحث في العمليات"
+            aria-label="البحث في اليومية"
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xl opacity-40" aria-hidden="true">🔍</span>
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40" aria-hidden="true">🔍</span>
         </div>
-        
-        <div className="md:col-span-2 flex overflow-x-auto no-scrollbar gap-2" role="group" aria-label="تصفية العمليات حسب النوع">
-           {['all', 'بيع', 'شراء', 'مصروف', VoucherType.Receipt, VoucherType.Payment].map(type => (
-             <button 
-               key={type}
-               onClick={() => setFilterType(type)}
-               className={`whitespace-nowrap px-4 py-2 rounded-xl font-black text-[10px] transition-all flex-1 ${filterType === type ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
-               aria-pressed={filterType === type}
-             >
-               {type === 'all' ? 'الكل' : type}
-             </button>
-           ))}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border dark:border-slate-700" role="group" aria-label="تصفية العمليات حسب النوع">
+           <button onClick={() => setFilterType('all')} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${filterType === 'all' ? 'bg-white dark:bg-slate-700 text-emerald-700 shadow-md' : 'text-slate-400'}`}>الكل</button>
+           <button onClick={() => setFilterType('بيع')} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${filterType === 'بيع' ? 'bg-white dark:bg-slate-700 text-emerald-700 shadow-md' : 'text-slate-400'}`}>مبيعات</button>
+           <button onClick={() => setFilterType('شراء')} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${filterType === 'شراء' ? 'bg-white dark:bg-slate-700 text-emerald-700 shadow-md' : 'text-slate-400'}`}>مشتريات</button>
+           <button onClick={() => setFilterType(VoucherType.Receipt)} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${filterType === VoucherType.Receipt ? 'bg-white dark:bg-slate-700 text-emerald-700 shadow-md' : 'text-slate-400'}`}>قبض</button>
+           <button onClick={() => setFilterType(VoucherType.Payment)} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${filterType === VoucherType.Payment ? 'bg-white dark:bg-slate-700 text-emerald-700 shadow-md' : 'text-slate-400'}`}>دفع</button>
+           <button onClick={() => setFilterType('مصروف')} className={`px-4 py-2 rounded-lg font-black text-xs transition-all ${filterType === 'مصروف' ? 'bg-white dark:bg-slate-700 text-emerald-700 shadow-md' : 'text-slate-400'}`}>مصاريف</button>
         </div>
       </div>
 
-      {/* Enhanced Ledger Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] shadow-2xl border-2 border-slate-300 dark:border-slate-800 overflow-hidden">
-        <div className="hidden md:block overflow-x-auto">
-          <table className="excel-table w-full text-sm" role="table" aria-label="سجل اليومية العامة">
-            <thead>
-              <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                <th scope="col" className="p-4 text-right border-l border-slate-300 dark:border-slate-700 w-44">التاريخ والوقت</th>
-                <th scope="col" className="p-4 text-center border-l border-slate-300 dark:border-slate-700 w-28">النوع</th>
-                <th scope="col" className="p-4 text-right border-l border-slate-300 dark:border-slate-700">بيان العملية (التفاصيل)</th>
-                <th scope="col" className="p-4 text-center border-l border-slate-300 dark:border-slate-700 w-24">الحالة</th>
-                <th scope="col" className="p-4 text-left border-l border-slate-300 dark:border-slate-700 w-40">المبلغ (يمني)</th>
-                <th scope="col" className="p-4 text-center w-28">إجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-              {filteredEntries.map((entry, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                  <td className="p-4 border-l border-slate-200 dark:border-slate-800">
-                    <div className="font-bold text-slate-600 dark:text-slate-400">{new Date(entry.timestamp).toLocaleDateString('ar-YE')}</div>
-                    <div className="text-[10px] text-slate-400">{new Date(entry.timestamp).toLocaleTimeString('ar-YE', {hour: '2-digit', minute: '2-digit'})}</div>
-                  </td>
-                  <td className="p-4 text-center border-l border-slate-200 dark:border-slate-800">
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase ${typeStyles[entry.type]}`}>
-                      {entry.type}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right border-l border-slate-200 dark:border-slate-800 font-black text-slate-800 dark:text-slate-200">
-                    {entry.desc}
-                  </td>
-                  <td className="p-4 text-center border-l border-slate-200 dark:border-slate-800">
-                    <span className={`font-black text-xs px-2 py-1 rounded-md bg-slate-50 dark:bg-slate-950/50 border ${entry.statusColor.replace('text', 'border').replace('-600', '-200')} ${entry.statusColor}`}>
-                      {entry.status === 'له' ? '📥 له' : '📤 عليه'}
-                    </span>
-                  </td>
-                  <td className="p-4 text-left border-l border-slate-200 dark:border-slate-800">
-                    <div className={`text-lg font-black ${entry.statusColor}`}>
-                      {entry.yerAmount.toLocaleString()} <span className="text-[10px] font-normal">ر.ي</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center">
-                    <div className="flex justify-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                      {entry.receipt && (
-                        <button onClick={() => setViewingReceipt(entry.receipt)} className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all" aria-label="عرض المرفق">📎</button>
-                      )}
-                      <button onClick={() => setDeleteConfig({ id: entry.id, origin: entry.origin })} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all" aria-label="حذف العملية">🗑️</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] md:rounded-[3.5rem] shadow-xl border-2 border-slate-300 dark:border-slate-800 overflow-hidden">
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto p-4 md:p-8">
+           <table className="excel-table w-full text-right" role="table" aria-label="سجل اليومية العامة">
+             <thead>
+               <tr className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                 <th scope="col" className="p-4 border-l dark:border-slate-700">التاريخ والوقت</th>
+                 <th scope="col" className="p-4 border-l dark:border-slate-700">البيان والتفاصيل</th>
+                 <th scope="col" className="p-4 border-l dark:border-slate-700 text-center">مدين (+)</th>
+                 <th scope="col" className="p-4 border-l dark:border-slate-700 text-center">دائن (-)</th>
+                 <th scope="col" className="p-4 border-l dark:border-slate-700 text-left">الرصيد (يمني)</th>
+                 <th scope="col" className="p-4 text-center print:hidden">إجراءات</th>
+               </tr>
+             </thead>
+             <tbody>
+               {filteredEntries.map((entry: JournalEntryDisplay, idx: number) => (
+                 <tr key={entry.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                   <td className="p-4 border-l dark:border-slate-700">
+                     <div className="font-bold text-slate-500 text-xs">{new Date(entry.timestamp).toLocaleString('ar-YE', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+                     <span className={`px-2 py-0.5 rounded-md text-[9px] font-black mt-1 inline-block ${typeStyles[entry.type] || 'bg-slate-100 text-slate-500'}`}>{entry.type}</span>
+                   </td>
+                   <td className="p-4 border-l dark:border-slate-700">
+                     <div className="font-black text-slate-900 dark:text-white text-base">{entry.desc}</div>
+                     {entry.currency && entry.currency !== Currency.YER && (
+                       <div className="text-[9px] text-slate-400 font-bold mt-1">
+                         {entry.amount?.toLocaleString()} {entry.currency} (@{getYerAmount(1, entry.currency).toLocaleString()} ر.ي)
+                       </div>
+                     )}
+                   </td>
+                   <td className={`p-4 border-l dark:border-slate-700 text-center font-black text-rose-600`}>
+                     {(entry.status === 'عليه' || entry.type === VoucherType.Payment || entry.type === 'مصروف') && entry.yerAmount > 0 ? entry.yerAmount.toLocaleString() : '-'}
+                   </td>
+                   <td className={`p-4 border-l dark:border-slate-700 text-center font-black text-emerald-600`}>
+                     {(entry.status === 'له' || entry.type === VoucherType.Receipt) && entry.yerAmount > 0 ? entry.yerAmount.toLocaleString() : '-'}
+                   </td>
+                   <td className={`p-4 border-l dark:border-slate-700 text-left font-black ${entry.yerAmount >= 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                     {Math.abs(entry.yerAmount).toLocaleString()} <span className="text-xs font-normal opacity-50">ر.ي</span>
+                   </td>
+                   <td className="p-4 text-center print:hidden">
+                     <div className="flex justify-center gap-2">
+                       {entry.receipt && (
+                         <a href={entry.receipt} target="_blank" rel="noopener noreferrer" className="p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition" title="عرض الإيصال">📄</a>
+                       )}
+                       <button onClick={() => setDeleteConfig({ id: entry.id, origin: entry.origin })} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition" title="حذف العملية">🗑️</button>
+                     </div>
+                   </td>
+                 </tr>
+               ))}
+               {filteredEntries.length === 0 && (
+                 <tr>
+                   <td colSpan={6} className="p-10 text-center text-slate-400 italic">لا توجد عمليات مطابقة في اليومية.</td>
+                 </tr>
+               )}
+             </tbody>
+           </table>
         </div>
 
-        {/* Mobile View - Cards Layout */}
-        <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
-           {filteredEntries.map((entry, idx) => (
-             <div key={idx} className="p-4 space-y-3" role="listitem">
-                <div className="flex justify-between items-start">
-                   <div className="flex gap-2 items-center">
-                      <span className={`px-2 py-0.5 rounded text-[8px] font-black ${typeStyles[entry.type]}`}>{entry.type}</span>
-                      <span className="text-[9px] text-slate-400 font-bold">{new Date(entry.timestamp).toLocaleDateString('ar-YE')}</span>
-                   </div>
-                   <span className={`font-black text-[10px] ${entry.statusColor}`}>{entry.status === 'له' ? 'له (إيراد)' : 'عليه (مصروف)'}</span>
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y dark:divide-slate-800" role="list">
+          {filteredEntries.map((entry: JournalEntryDisplay, idx: number) => (
+            <div key={entry.id} className="p-4 space-y-2" role="listitem">
+              <div className="flex justify-between items-start mb-1">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded-md text-[9px] font-black ${typeStyles[entry.type] || 'bg-slate-100 text-slate-500'}`}>{entry.type}</span>
+                  <div className="font-black text-slate-900 dark:text-white text-base">{entry.desc}</div>
                 </div>
-                <div className="font-black text-slate-800 dark:text-white text-sm">{entry.desc}</div>
-                <div className="flex justify-between items-center pt-2">
-                   <div className={`text-xl font-black ${entry.statusColor}`}>
-                      {entry.yerAmount.toLocaleString()} <span className="text-xs">ر.ي</span>
-                   </div>
-                   <div className="flex gap-2">
-                      {entry.receipt && <button onClick={() => setViewingReceipt(entry.receipt)} className="text-[10px] font-black text-indigo-500 border border-indigo-100 px-2 py-1 rounded" aria-label="عرض المرفق">مرفق</button>}
-                      <button onClick={() => setDeleteConfig({ id: entry.id, origin: entry.origin })} className="text-[10px] font-black text-rose-500 border border-rose-100 px-2 py-1 rounded" aria-label="حذف العملية">حذف</button>
-                   </div>
+                <div className="font-bold text-slate-500 text-[10px]">{new Date(entry.timestamp).toLocaleDateString('ar-YE', { day: 'numeric', month: 'short' })}</div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex gap-4 items-center">
+                  <span className={`font-black text-base ${entry.status === 'عليه' || entry.type === VoucherType.Payment || entry.type === 'مصروف' ? 'text-rose-600' : 'text-emerald-600'}`}>
+                    {entry.yerAmount.toLocaleString()} <span className="text-[10px]">{Currency.YER}</span>
+                  </span>
                 </div>
-             </div>
-           ))}
-           {filteredEntries.length === 0 && (
-              <div className="p-10 text-center opacity-30 italic">لا توجد عمليات تطابق البحث..</div>
-           )}
+                <div className="flex gap-2">
+                  {entry.receipt && (
+                    <a href={entry.receipt} target="_blank" rel="noopener noreferrer" className="p-2 bg-blue-50 text-blue-500 rounded-lg" title="عرض الإيصال">📄</a>
+                  )}
+                  <button onClick={() => setDeleteConfig({ id: entry.id, origin: entry.origin })} className="p-2 bg-red-50 text-red-500 rounded-lg" title="حذف العملية">🗑️</button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {filteredEntries.length === 0 && (
+            <div className="p-10 text-center text-slate-400 italic">لا توجد عمليات مطابقة في اليومية.</div>
+          )}
         </div>
       </div>
-
-      {/* Receipt Modal */}
-      {viewingReceipt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in" role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title">
-          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md" onClick={() => setViewingReceipt(null)} aria-label="إغلاق"></div>
-          <div className="relative w-full sm:max-w-2xl bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 my-auto max-h-[90vh] overflow-y-auto no-scrollbar">
-             <div className="p-4 bg-slate-100 dark:bg-slate-800 flex justify-between items-center">
-                <h3 id="receipt-modal-title" className="font-black dark:text-white text-lg">📄 المرفق الرقمي</h3>
-                <button onClick={() => setViewingReceipt(null)} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-xl" aria-label="إغلاق">✕</button>
-             </div>
-             <div className="p-4 bg-white dark:bg-black flex items-center justify-center min-h-[300px]">
-                <img src={viewingReceipt} className="max-w-full max-h-[70vh] rounded-xl object-contain" alt="Receipt" />
-             </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 });

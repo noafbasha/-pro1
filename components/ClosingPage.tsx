@@ -16,10 +16,10 @@ const ClosingPage: React.FC = React.memo(() => { // Wrapped with React.memo
 
   const stats = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
-    const todaySales = sales.filter(s => s.date.startsWith(today));
-    const todayPurchases = purchases.filter(p => p.date.startsWith(today));
-    const todayExpenses = expenses.filter(e => e.date.startsWith(today));
-    const todayVouchers = vouchers.filter(v => v.date.startsWith(today));
+    const todaySales = sales.filter((s) => s.date.startsWith(today));
+    const todayPurchases = purchases.filter((p) => p.date.startsWith(today));
+    const todayExpenses = expenses.filter((e) => e.date.startsWith(today));
+    const todayVouchers = vouchers.filter((v) => v.date.startsWith(today));
 
     const convertToYer = (val: number, curr: string) => {
       if (curr === Currency.SAR) return val * rates.SAR;
@@ -27,17 +27,17 @@ const ClosingPage: React.FC = React.memo(() => { // Wrapped with React.memo
       return val;
     };
 
-    const cashInSales = todaySales.filter(s => s.status === PaymentStatus.Cash).reduce((sum, s) => sum + convertToYer(Math.abs(s.total), s.currency), 0);
-    const cashInReceipts = todayVouchers.filter(v => v.type === VoucherType.Receipt).reduce((sum, v) => sum + convertToYer(Math.abs(v.amount), v.currency), 0);
+    const cashInSales = todaySales.filter((s) => s.status === PaymentStatus.Cash).reduce((sum, s) => sum + convertToYer(Math.abs(s.total), s.currency), 0);
+    const cashInReceipts = todayVouchers.filter((v) => v.type === VoucherType.Receipt).reduce((sum, v) => sum + convertToYer(Math.abs(v.amount), v.currency), 0);
     const cashIn = cashInSales + cashInReceipts;
 
-    const cashOutPurchases = todayPurchases.filter(p => p.status === PaymentStatus.Cash).reduce((sum, p) => sum + convertToYer(Math.abs(p.totalCost), p.currency), 0);
+    const cashOutPurchases = todayPurchases.filter((p) => p.status === PaymentStatus.Cash).reduce((sum, p) => sum + convertToYer(Math.abs(p.totalCost), p.currency), 0);
     const cashOutExpenses = todayExpenses.reduce((sum, e) => sum + convertToYer(e.amount, e.currency), 0);
-    const cashOutPayments = todayVouchers.filter(v => v.type === VoucherType.Payment).reduce((sum, v) => sum + convertToYer(Math.abs(v.amount), v.currency), 0);
+    const cashOutPayments = todayVouchers.filter((v) => v.type === VoucherType.Payment).reduce((sum, v) => sum + convertToYer(Math.abs(v.amount), v.currency), 0);
     const cashOut = cashOutPurchases + cashOutExpenses + cashOutPayments;
 
     const expectedCash = cashIn - cashOut;
-    const creditSales = todaySales.filter(s => s.status === PaymentStatus.Credit && s.qatType !== PAYMENT_TYPE_MARKER).reduce((sum, s) => sum + convertToYer(s.total, s.currency), 0);
+    const creditSales = todaySales.filter((s) => s.status === PaymentStatus.Credit && s.qatType !== PAYMENT_TYPE_MARKER).reduce((sum, s) => sum + convertToYer(s.total, s.currency), 0);
 
     return { 
       cashIn, cashOut, expectedCash, creditSales, 
@@ -171,7 +171,7 @@ const ClosingPage: React.FC = React.memo(() => { // Wrapped with React.memo
   );
 });
 
-const SummaryTile = ({ title, value, color, bg, icon, sub }: any) => (
+const SummaryTile = ({ title, value, color, bg, icon, sub }: {title: string, value: number, color: string, bg: string, icon: string, sub: string}) => (
   <div className={`p-6 md:p-10 rounded-[2.5rem] ${bg} border-2 border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all flex flex-col justify-between group`}>
      <div className="flex justify-between items-start mb-6">
         <span className="text-2xl md:text-5xl group-hover:scale-110 transition-transform" aria-hidden="true">{icon}</span>

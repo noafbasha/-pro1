@@ -51,12 +51,12 @@ const AiAssistant: React.FC = React.memo(() => {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
     const userMsg = { id: Date.now().toString(), text: input, sender: 'user', timestamp: new Date() };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev: any[]) => [...prev, userMsg]);
     setIsLoading(true); setInput('');
     try {
       const result = await askBusinessAssistant(input, { stats, rates });
       if (result.functionCalls) result.functionCalls.forEach(handleActionDetected);
-      setMessages(prev => [...prev, { id: Date.now().toString(), text: result.text, sender: 'bot', timestamp: new Date() }]);
+      setMessages((prev: any[]) => [...prev, { id: Date.now().toString(), text: result.text, sender: 'bot', timestamp: new Date() }]);
     } catch (error) { notify('خطأ في الاتصال الذكي', 'error'); } 
     finally { setIsLoading(false); }
   };
@@ -123,7 +123,7 @@ const AiAssistant: React.FC = React.memo(() => {
             <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md rounded-[2.5rem] p-8 md:p-10 shadow-2xl border-t-[10px] border-brandGreen animate-in zoom-in">
                <h3 id="confirmation-title" className="text-xl md:text-3xl font-black mb-6 text-center">تأكيد العملية الذكية</h3>
                <div className="space-y-3 mb-8 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border dark:border-slate-700">
-                  {Object.entries(pendingAction.args).map(([k, v]: any) => (
+                  {Object.entries(pendingAction.args).map(([k, v]: [string, any]) => (
                     <div key={k} className="flex justify-between font-bold text-xs md:text-lg">
                        <span className="text-slate-400 capitalize">{k}:</span>
                        <span className="dark:text-white">{String(v)}</span>

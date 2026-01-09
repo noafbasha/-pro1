@@ -46,7 +46,7 @@ const CustomersPage: React.FC = React.memo(() => {
   // ميزة البحث عن مشابهات عند الإضافة
   const similarExisting = useMemo(() => {
     if (newCustomer.name.length < 2) return [];
-    return customers.filter(c => c.name.includes(newCustomer.name)).slice(0, 3);
+    return customers.filter((c: Customer) => c.name.includes(newCustomer.name)).slice(0, 3);
   }, [newCustomer.name, customers]);
 
   useEffect(() => {
@@ -60,9 +60,9 @@ const CustomersPage: React.FC = React.memo(() => {
   }, [location.state]);
 
   const enrichedCustomers = useMemo(() => {
-    return customers.map(customer => {
+    return customers.map((customer: Customer) => {
       const debt = debts.find(d => d.customerId === customer.id);
-      const balanceYer = debt ? (debt.balances.YER + (debt.balances.SAR * rates.SAR) + (debt.balances.OMR * rates.OMR)) : 0;
+      const balanceYer = debt ? (debt.balances.YER + ((debt.balances.SAR || 0) * rates.SAR) + ((debt.balances.OMR || 0) * rates.OMR)) : 0;
       
       let health = { label: 'ممتاز', color: 'text-green-600 bg-green-50', icon: '⭐' };
       if (balanceYer > 500000) health = { label: 'حرج', color: 'text-red-600 bg-red-50', icon: '🔴' };
@@ -94,7 +94,7 @@ const CustomersPage: React.FC = React.memo(() => {
     }
   };
 
-  const filteredCustomers = enrichedCustomers.filter(c => 
+  const filteredCustomers = enrichedCustomers.filter((c: Customer & { balance: number, health: any }) => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.phone.includes(searchTerm)
   );
@@ -171,7 +171,7 @@ const CustomersPage: React.FC = React.memo(() => {
 
       {activeTab === 'list' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-10" role="tabpanel" aria-labelledby="list-tab">
-          {filteredCustomers.map(customer => (
+          {filteredCustomers.map((customer: Customer & { balance: number, health: any }) => (
             <div key={customer.id} className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-2xl md:rounded-[3rem] shadow-xl border-2 border-slate-100 dark:border-slate-800 hover:border-green-400 transition-all relative overflow-hidden group flex flex-col" role="listitem">
               {/* <div className={`absolute top-0 right-0 p-3 md:p-5 rounded-bl-[2rem] flex items-center justify-center text-xl md:text-4xl shadow-inner ${customer.health.color}`} aria-hidden="true">
                 {customer.health.icon} 
@@ -209,7 +209,7 @@ const CustomersPage: React.FC = React.memo(() => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {filteredCustomers.filter(c => (c.openingBalance || 0) !== 0).map(c => (
+                  {filteredCustomers.filter((c: Customer) => (c.openingBalance || 0) !== 0).map((c: Customer) => (
                     <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                       <td className="p-5 border-l border-slate-300 dark:border-slate-700 border-b">
                         <div className="font-black text-xl text-slate-800 dark:text-white">{c.name}</div>
@@ -230,7 +230,7 @@ const CustomersPage: React.FC = React.memo(() => {
            </div>
            {/* Mobile Card View for Opening Balances */}
            <div className="md:hidden divide-y dark:divide-slate-800" role="list">
-             {filteredCustomers.filter(c => (c.openingBalance || 0) !== 0).map(c => (
+             {filteredCustomers.filter((c: Customer) => (c.openingBalance || 0) !== 0).map((c: Customer) => (
                <div key={c.id} className="p-4" role="listitem">
                  <div className="flex justify-between items-start mb-2">
                    <div className="flex items-center gap-2">
@@ -249,7 +249,7 @@ const CustomersPage: React.FC = React.memo(() => {
                  </div>
                </div>
              ))}
-             {filteredCustomers.filter(c => (c.openingBalance || 0) !== 0).length === 0 && (
+             {filteredCustomers.filter((c: Customer) => (c.openingBalance || 0) !== 0).length === 0 && (
                <div className="p-10 text-center opacity-30 italic">لا توجد مديونيات قديمة.</div>
              )}
            </div>
@@ -281,7 +281,7 @@ const CustomersPage: React.FC = React.memo(() => {
                       <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-200 dark:border-amber-700 rounded-2xl p-4 shadow-xl animate-in slide-in-from-top-2" role="alert">
                          <p className="text-[10px] font-black text-amber-600 mb-2 uppercase">⚠️ عملاء مشابهون مسجلون مسبقاً:</p>
                          <div className="space-y-2">
-                            {similarExisting.map(c => (
+                            {similarExisting.map((c: Customer) => (
                               <div key={c.id} className="flex justify-between items-center bg-white dark:bg-slate-800 p-2 rounded-xl border border-amber-100 dark:border-amber-800">
                                  <span className="font-black text-sm dark:text-white">{c.name}</span>
                                  <span className="text-[10px] font-bold text-slate-400">{c.phone}</span>
@@ -352,7 +352,7 @@ const CustomersPage: React.FC = React.memo(() => {
                   placeholder="-- اختر العميل --"
                   options={customers}
                   value={voucherData.entityId}
-                  onChange={(val) => setVoucherData({...voucherData, entityId: val})}
+                  onChange={(val: string) => setVoucherData({...voucherData, entityId: val})}
                   aria-required="true"
                 />
 

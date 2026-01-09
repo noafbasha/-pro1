@@ -1,4 +1,5 @@
 
+
 export enum Currency {
   YER = 'YER',
   SAR = 'SAR',
@@ -277,4 +278,35 @@ export interface SocialSettings {
 
 export enum ExpenseCategory {
   Wastage = 'توالف وهالك'
+}
+
+// Type definitions for JournalPage and EntityStatementModal for better type safety
+export interface JournalEntryDisplay {
+  id: string;
+  origin: 'sale' | 'purchase' | 'voucher' | 'expense';
+  type: string; // e.g., 'بيع', 'شراء', 'سند قبض', 'مصروف'
+  status: string; // 'عليه' | 'له'
+  statusColor: string;
+  yerAmount: number;
+  desc: string;
+  timestamp: string;
+  receipt?: string;
+  currency: Currency | string; // Original currency
+  amount?: number; // Original amount (sale.total, purchase.totalCost, voucher.amount, expense.amount)
+}
+
+export interface StatementTransaction {
+  date: string;
+  desc: string;
+  debit: number;
+  credit: number;
+  currency: Currency | string;
+  ref: string;
+}
+
+export interface DetailedStatementRow extends StatementTransaction {
+  debitYer: number;
+  creditYer: number;
+  balanceYer: number;
+  rateAtTime: number;
 }

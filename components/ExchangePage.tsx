@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAgency } from '../context/AgencyContext';
 import { useNotify } from '../context/NotificationContext';
+import { ExchangeRate } from '../types'; // Import ExchangeRate type
 
 const ExchangePage: React.FC = React.memo(() => {
   const { rates, rateHistory, updateRates } = useAgency();
@@ -161,7 +162,7 @@ const ExchangePage: React.FC = React.memo(() => {
                     </tr>
                  </thead>
                  <tbody>
-                    {rateHistory.map((h, i) => (
+                    {rateHistory.map((h: ExchangeRate, i: number) => (
                        <tr key={`${h.date}-${i}`} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                           <td className="px-4 py-3 md:px-6 md:py-4 font-bold text-slate-500 dark:text-slate-400 text-[10px] md:text-sm">{h.date}</td>
                           <td className="px-4 py-3 md:px-6 md:py-4 text-center font-black text-blue-900 dark:text-blue-400 text-sm md:text-xl">

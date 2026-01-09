@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAgency } from '../context/AgencyContext';
 import { useNotify } from '../context/NotificationContext';
-import { QatType, Currency, Sale } from '../types';
+import { QatType, Currency, Sale, Debt } from '../types';
 import TransactionSuccessModal from './TransactionSuccessModal';
 import { generateVoiceReminder } from '../services/ttsService';
 import { convertAudioDataToBuffer } from '../services/audioUtils';
@@ -36,11 +36,11 @@ const DebtsPage: React.FC = React.memo(() => {
     }
   }, [location.state]);
 
-  const handleGenerateVoice = async (debt: any) => {
+  const handleGenerateVoice = async (debt: Debt) => {
     setIsGeneratingVoice(true);
     try {
       const balanceText = Object.entries(debt.balances)
-        .filter(([_, val]) => val !== 0)
+        .filter(([_key, val]) => (val as number) !== 0) // Explicitly cast val to number
         .map(([cur, val]) => `${(val as number).toLocaleString()} ${cur}`)
         .join(' و ');
 
@@ -76,12 +76,12 @@ const DebtsPage: React.FC = React.memo(() => {
   };
 
   const filteredDebts = useMemo(() => {
-    return debts.filter(d => 
+    return debts.filter((d: Debt) => 
       d.customerName.toLowerCase().includes(searchTerm.toLowerCase())
-    ).map(d => {
+    ).map((d: Debt) => {
       const totalYer = (d.balances.YER || 0) + 
-                       (d.balances.SAR || 0) * (rates.SAR || 430) + 
-                       (d.balances.OMR || 0) * (rates.OMR || 425);
+                       ((d.balances.SAR || 0) * (rates.SAR || 430)) + 
+                       ((d.balances.OMR || 0) * (rates.OMR || 425));
       return { ...d, totalYer };
     }).sort((a, b) => b.totalYer - a.totalYer);
   }, [debts, searchTerm, rates]);
@@ -172,7 +172,7 @@ const DebtsPage: React.FC = React.memo(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDebts.map(debt => {
+                  {filteredDebts.map((debt: Debt & {totalYer: number}) => {
                     const aging = getAgingStatus(debt.lastActivityDate);
                     return (
                       <tr key={debt.customerId} className="hover:bg-amber-50/30 dark:hover:bg-slate-800 transition-colors">
@@ -181,13 +181,13 @@ const DebtsPage: React.FC = React.memo(() => {
                           <div className="text-[10px] text-slate-400 font-bold">آخر نشاط: {new Date(debt.lastActivityDate).toLocaleDateString('ar-YE')}</div>
                         </td>
                         <td className={`border border-slate-200 dark:border-slate-700 p-4 text-center font-black text-lg border-l ${debt.balances.YER > 0 ? 'text-slate-900 dark:text-white' : 'text-slate-300'}`}>
-                          {debt.balances.YER > 0 ? debt.balances.YER.toLocaleString() : '0'}
+                          {(debt.balances.YER || 0) > 0 ? (debt.balances.YER || 0).toLocaleString() : '0'}
                         </td>
                         <td className={`border border-slate-200 dark:border-slate-700 p-4 text-center font-black text-lg border-l ${debt.balances.SAR > 0 ? 'text-blue-600' : 'text-slate-300'}`}>
-                          {debt.balances.SAR > 0 ? debt.balances.SAR.toLocaleString() : '0'}
+                          {(debt.balances.SAR || 0) > 0 ? (debt.balances.SAR || 0).toLocaleString() : '0'}
                         </td>
                         <td className={`border border-slate-200 dark:border-slate-700 p-4 text-center font-black text-lg border-l ${debt.balances.OMR > 0 ? 'text-indigo-600' : 'text-slate-300'}`}>
-                          {debt.balances.OMR > 0 ? debt.balances.OMR.toLocaleString() : '0'}
+                          {(debt.balances.OMR || 0) > 0 ? (debt.balances.OMR || 0).toLocaleString() : '0'}
                         </td>
                         <td className="border border-slate-200 dark:border-slate-700 p-4 text-center bg-amber-50/30 dark:bg-amber-900/5 border-l">
                           <div className="font-black text-xl text-amber-700">{debt.totalYer.toLocaleString()}</div>
@@ -222,7 +222,7 @@ const DebtsPage: React.FC = React.memo(() => {
            </div>
            {/* Mobile Card View for Debts */}
            <div className="md:hidden divide-y dark:divide-slate-800" role="list">
-             {filteredDebts.map(debt => {
+             {filteredDebts.map((debt: Debt & {totalYer: number}) => {
                const aging = getAgingStatus(debt.lastActivityDate);
                return (
                  <div key={debt.customerId} className="p-4" role="listitem">
@@ -263,7 +263,7 @@ const DebtsPage: React.FC = React.memo(() => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 print:hidden animate-in fade-in duration-500">
-          {filteredDebts.map(debt => {
+          {filteredDebts.map((debt: Debt & {totalYer: number}) => {
             const aging = getAgingStatus(debt.lastActivityDate);
             return (
               <div key={debt.customerId} className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] shadow-xl border-2 border-slate-100 dark:border-slate-800 flex flex-col justify-between group hover:border-amber-500 transition-all relative overflow-hidden" role="group" aria-labelledby={`debt-card-title-${debt.customerId}`}>
@@ -321,14 +321,14 @@ const DebtsPage: React.FC = React.memo(() => {
                 placeholder="-- اختر العميل --"
                 options={customers}
                 value={voucherData.entityId}
-                onChange={(val) => setVoucherData({...voucherData, entityId: val})}
+                onChange={(val: string) => setVoucherData({...voucherData, entityId: val})}
                 aria-required="true"
               />
               
               <div className="space-y-4">
                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest px-4">العملة المسدد بها</label>
                 <div className="flex gap-2" role="radiogroup" aria-labelledby="currency-label">
-                   {[Currency.YER, Currency.SAR, Currency.OMR].map(curr => (
+                   {[Currency.YER, Currency.SAR, Currency.OMR].map((curr: Currency) => (
                      <button
                         key={curr}
                         type="button"

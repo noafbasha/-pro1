@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, Suspense, useMemo, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useMemo, useRef, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { AgencyProvider, useAgency } from './context/AgencyContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -17,7 +16,7 @@ import AiAssistant from './components/AiAssistant';
 import SettingsPage from './components/SettingsPage';
 import ReportsPage from './components/ReportsPage';
 import ClosingPage from './components/ClosingPage';
-import JournalPage from './components/JournalPage';
+import JournalPage from './components/JournalPage'; // This import is correct now
 import InventoryPage from './components/InventoryPage';
 import NotificationsCenter from './components/NotificationsCenter';
 import Login from './components/Login';
@@ -79,6 +78,32 @@ const GlobalLoader: React.FC = () => {
   );
 };
 
+// NavLink and RootRedirect must be defined before AppLayout
+const NavLink: React.FC<{ to: string; label: string }> = React.memo(({ to, label }) => {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  return (
+    <Link 
+      to={to} 
+      className={`px-4 py-3 md:px-6 md:py-5 text-sm md:text-xl font-black transition-all border-b-2 whitespace-nowrap 
+        ${isActive 
+          ? 'text-emerald-700 dark:text-emerald-400 border-emerald-700 dark:border-emerald-400' 
+          : 'text-slate-500 border-transparent hover:text-slate-900 dark:hover:text-white'}`}
+      aria-current={isActive ? "page" : undefined}
+      aria-label={label.replace(/[^ء-ي\s]/g, '')}
+    >
+      {label}
+    </Link>
+  );
+});
+
+const RootRedirect: React.FC = () => {
+  const { user, isLoading } = useAgency();
+  if (isLoading) return <GlobalLoader />;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/login" replace />;
+};
+
 const NavigationDock: React.FC = React.memo(() => {
   const location = useLocation();
   const { setIsAiOpen } = useAgency();
@@ -96,7 +121,7 @@ const NavigationDock: React.FC = React.memo(() => {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[100] pb-[env(safe-area-inset-bottom)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl border-t border-slate-200 dark:border-white/10 md:hidden">
       <div className="flex items-center justify-around px-2 py-3">
-        {dockItems.map(item => {
+        {dockItems.map((item) => {
           const isActive = location.pathname === item.to;
           return (
             <Link 
@@ -141,7 +166,7 @@ const DesktopDock: React.FC = React.memo(() => {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-4xl hidden md:block">
       <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl border border-slate-200 dark:border-white/10 px-10 py-6 rounded-[3rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.5)] flex items-center justify-between gap-0.5">
-        {dockItems.map(item => {
+        {dockItems.map((item) => {
           const isActive = location.pathname === item.to;
           return (
             <Link 
@@ -236,33 +261,37 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (!user && !isLoading) return <Navigate to="/login" replace />;
   if (isAppLocked) return <PinLock />;
   
-  return <>{children}</>;
+  return <>{children} />;
 };
 
 const AppLayout: React.FC = () => {
-  const { isAiOpen, notifications, appSettings, togglePrivacyMode, user, cloudStatus } = useAgency();
+  // Fixed destructuring to include all necessary values
+  const { isAiOpen, notifications, appSettings, togglePrivacyMode, user, cloudStatus } = useAgency(); 
   const location = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = useCallback(() => {
     const n = !isDarkMode;
     setIsDarkMode(n);
     if (n) { document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
     else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
-  };
+  }, [isDarkMode]);
 
   const isFullPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/developer';
 
   const cloudIndicator = useMemo(() => {
+    let color: string; // Declare color variable explicitly
+    let text: string; // Declare text variable explicitly
     switch(cloudStatus) {
-      case 'connected': return { color: 'bg-emerald-500', text: 'مؤمن سحابياً' };
-      case 'syncing': return { color: 'bg-blue-500 animate-pulse', text: 'جاري المزامنة...' };
-      case 'offline': return { color: 'bg-amber-500 animate-pulse', text: 'يعمل أوفلاين' };
-      case 'error': return { color: 'bg-red-500 animate-ping', text: 'خطأ في الربط' };
-      default: return { color: 'bg-slate-400', text: 'غير معروف' };
+      case 'connected': color = 'bg-emerald-500'; text = 'مؤمن سحابياً'; break;
+      case 'syncing': color = 'bg-blue-500 animate-pulse'; text = 'جاري المزامنة...'; break;
+      case 'offline': color = 'bg-amber-500 animate-pulse'; text = 'يعمل أوفلاين'; break;
+      case 'error': color = 'bg-red-500 animate-ping'; text = 'خطأ في الربط'; break;
+      default: color = 'bg-slate-400'; text = 'غير معروف'; break;
     }
+    return { color, text };
   }, [cloudStatus]);
 
   return (
@@ -361,31 +390,6 @@ const AppLayout: React.FC = () => {
       <NotificationsCenter isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
     </div>
   );
-};
-
-const NavLink: React.FC<{ to: string; label: string }> = React.memo(({ to, label }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-  return (
-    <Link 
-      to={to} 
-      className={`px-4 py-3 md:px-6 md:py-5 text-sm md:text-xl font-black transition-all border-b-2 whitespace-nowrap 
-        ${isActive 
-          ? 'text-emerald-700 dark:text-emerald-400 border-emerald-700 dark:border-emerald-400' 
-          : 'text-slate-500 border-transparent hover:text-slate-900 dark:hover:text-white'}`}
-      aria-current={isActive ? "page" : undefined}
-      aria-label={label.replace(/[^ء-ي\s]/g, '')}
-    >
-      {label}
-    </Link>
-  );
-});
-
-const RootRedirect: React.FC = () => {
-  const { user, isLoading } = useAgency();
-  if (isLoading) return <GlobalLoader />;
-  if (user) return <Navigate to="/dashboard" replace />;
-  return <Navigate to="/login" replace />;
 };
 
 const App: React.FC = () => {

@@ -83,15 +83,15 @@ const ExpensesPage: React.FC = React.memo(() => { // Wrapped with React.memo
 
 
   const filteredExpenses = useMemo(() => {
-    let list = expenses.filter(e => 
+    let list = expenses.filter((e: Expense) => 
       (e.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.category || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
-    if (showRecurringOnly) list = list.filter(e => e.isRecurring);
-    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (showRecurringOnly) list = list.filter((e: Expense) => e.isRecurring);
+    return list.sort((a: Expense, b: Expense) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [expenses, searchTerm, showRecurringOnly]);
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalExpenses = expenses.reduce((sum: number, e: Expense) => sum + (e.amount || 0), 0);
 
   return (
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-500 pb-32 px-2 md:px-0">
@@ -146,7 +146,7 @@ const ExpensesPage: React.FC = React.memo(() => { // Wrapped with React.memo
 
       {/* Grid View - Column for Mobile */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8" role="list">
-         {filteredExpenses.map(exp => (
+         {filteredExpenses.map((exp: Expense) => (
             <div key={exp.id} className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-[1.5rem] md:rounded-[3rem] shadow-xl border-r-8 border-rose-500 flex justify-between items-center group active:scale-95 transition-all text-right" role="listitem">
                <div className="flex items-center gap-4 md:gap-6">
                   <div className="w-12 h-12 md:w-16 md:h-16 bg-rose-50 dark:bg-rose-900/30 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-3xl shadow-inner shrink-0" aria-hidden="true">
